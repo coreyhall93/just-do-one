@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just Do One</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Lucide icons as SVG components
+    const Plus = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    );
+
+    const List = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+    );
+
+    const Trash2 = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
+    );
+
+    const Edit2 = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+      </svg>
+    );
+
+    const Play = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    );
+
+    const Pause = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+    );
+
+    const Check = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    );
+
+    const X = ({ size = 24, className = "" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    );
+
+    const STARTER_CHORES = [
+      'Clean bathroom sink',
+      'Vacuum living room',
+      'Wipe kitchen counters',
+      'Take out trash',
+      'Clean mirrors',
+      'Dust shelves',
+      'Mop kitchen floor',
+      'Clean toilet',
+      'Organize desk',
+      'Wipe down appliances',
+      'Clean shower',
+      'Vacuum bedroom',
+      'Change bed sheets',
+      'Clean windows',
+      'Organize closet'
+    ];
+
+    const FREQUENCY_OPTIONS = [
+      { value: 'daily', label: 'Daily' },
+      { value: 'weekly', label: 'Weekly' },
+      { value: 'biweekly', label: 'Bi-weekly' },
+      { value: 'monthly', label: 'Monthly' },
+      { value: 'custom', label: 'Custom' }
+    ];
+
+    const FREQUENCY_UNITS = [
+      { value: 'days', label: 'Days' },
+      { value: 'weeks', label: 'Weeks' },
+      { value: 'months', label: 'Months' }
+    ];
+
+    const App = () => {
+      const [chores, setChores] = useState([]);
+      const [activeChore, setActiveChore] = useState(null);
+      const [drawnChore, setDrawnChore] = useState(null);
+      const [skippedChores, setSkippedChores] = useState([]);
+      const [showCompletionModal, setShowCompletionModal] = useState(false);
+      const [showAddChore, setShowAddChore] = useState(false);
+      const [showChoreList, setShowChoreList] = useState(false);
+      const [showSettings, setShowSettings] = useState(false);
+      const [showOnboarding, setShowOnboarding] = useState(false);
+      const [stats, setStats] = useState({ streak: 0, monthTotal: 0, allTimeTotal: 0 });
+      const [sortBy, setSortBy] = useState('name');
+      const [editingChore, setEditingChore] = useState(null);
+      const [isDrawing, setIsDrawing] = useState(false);
+      const [elapsedTime, setElapsedTime] = useState(0);
+
+      // Timer for active chore
+      useEffect(() => {
+        let interval;
+        if (activeChore) {
+          interval = setInterval(() => {
+            const now = new Date();
+            const started = new Date(activeChore.startedAt);
+            const diff = Math.floor((now - started) / 1000);
+            setElapsedTime(diff);
+          }, 1000);
+        }
+        return () => {
+          if (interval) clearInterval(interval);
+          setElapsedTime(0);
+        };
+      }, [activeChore]);
+
+      // Load from localStorage
+      useEffect(() => {
+        const savedChores = localStorage.getItem('justDoOneChores');
+        const savedActive = localStorage.getItem('justDoOneActive');
+        const savedStats = localStorage.getItem('justDoOneStats');
+        const savedSkipped = localStorage.getItem('justDoOneSkipped');
+        const hasSeenOnboarding = localStorage.getItem('justDoOneHasSeenOnboarding');
+
+        if (savedChores) setChores(JSON.parse(savedChores));
+        if (savedActive) setActiveChore(JSON.parse(savedActive));
+        if (savedStats) setStats(JSON.parse(savedStats));
+        if (savedSkipped) setSkippedChores(JSON.parse(savedSkipped));
+
+        if (!hasSeenOnboarding && (!savedChores || JSON.parse(savedChores).length === 0)) {
+          setShowOnboarding(true);
+        }
+
+        const savedLastCompletionDate = localStorage.getItem('justDoOneLastCompletion');
+        if (savedLastCompletionDate) {
+          const lastDate = new Date(savedLastCompletionDate);
+          const today = new Date();
+          const daysDiff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff > 1) {
+            setStats(prev => ({ ...prev, streak: 0 }));
+          }
+        }
+      }, []);
+
+      // Save to localStorage
+      useEffect(() => {
+        localStorage.setItem('justDoOneChores', JSON.stringify(chores));
+      }, [chores]);
+
+      useEffect(() => {
+        localStorage.setItem('justDoOneActive', JSON.stringify(activeChore));
+      }, [activeChore]);
+
+      useEffect(() => {
+        localStorage.setItem('justDoOneStats', JSON.stringify(stats));
+      }, [stats]);
+
+      useEffect(() => {
+        localStorage.setItem('justDoOneSkipped', JSON.stringify(skippedChores));
+      }, [skippedChores]);
+
+      const getAvailableChores = () => {
+        const now = new Date();
+        return chores.filter(chore => {
+          if (chore.paused) return false;
+          if (!chore.lastCompleted) return true;
+
+          const lastCompleted = new Date(chore.lastCompleted);
+          const daysSince = Math.floor((now - lastCompleted) / (1000 * 60 * 60 * 24));
+
+          switch (chore.frequency) {
+            case 'daily':
+              return now.getDate() !== lastCompleted.getDate() || 
+                     now.getMonth() !== lastCompleted.getMonth() ||
+                     now.getFullYear() !== lastCompleted.getFullYear();
+            case 'weekly':
+              return daysSince >= 7;
+            case 'biweekly':
+              return daysSince >= 14;
+            case 'monthly':
+              return daysSince >= 30;
+            case 'custom':
+              const customDays = chore.customNumber * (
+                chore.customUnit === 'weeks' ? 7 :
+                chore.customUnit === 'months' ? 30 :
+                1
+              );
+              return daysSince >= customDays;
+            default:
+              return true;
+          }
+        });
+      };
+
+      const drawChore = () => {
+        const available = getAvailableChores();
+        if (available.length === 0) return;
+
+        setIsDrawing(true);
+        setTimeout(() => {
+          const randomIndex = Math.floor(Math.random() * available.length);
+          setDrawnChore(available[randomIndex]);
+          setIsDrawing(false);
+        }, 500);
+      };
+
+      const cancelDrawnChore = () => {
+        setDrawnChore(null);
+      };
+
+      const startChore = () => {
+        if (!drawnChore) return;
+        const wasAlreadySkipped = skippedChores.includes(drawnChore.id);
+        setActiveChore({
+          ...drawnChore,
+          startedAt: new Date().toISOString(),
+          wasSkipped: wasAlreadySkipped
+        });
+        setDrawnChore(null);
+      };
+
+      const skipDrawnChore = () => {
+        if (!drawnChore) return;
+        
+        if (skippedChores.includes(drawnChore.id)) {
+          return;
+        }
+
+        setSkippedChores(prev => [...prev, drawnChore.id]);
+        setDrawnChore(null);
+        
+        setTimeout(() => {
+          drawChore();
+        }, 100);
+      };
+
+      const skipActiveChore = () => {
+        if (!activeChore) return;
+        
+        if (activeChore.wasSkipped || skippedChores.includes(activeChore.id)) {
+          return;
+        }
+        
+        setSkippedChores(prev => [...prev, activeChore.id]);
+        setActiveChore(null);
+      };
+
+      const completeChore = () => {
+        if (!activeChore) return;
+
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const lastCompletionDate = localStorage.getItem('justDoOneLastCompletion');
+        
+        setChores(prev => prev.map(c => 
+          c.id === activeChore.id 
+            ? { ...c, lastCompleted: now.toISOString() }
+            : c
+        ));
+
+        setSkippedChores(prev => prev.filter(id => id !== activeChore.id));
+
+        const newStats = { ...stats };
+        newStats.allTimeTotal += 1;
+        newStats.monthTotal += 1;
+        
+        if (lastCompletionDate) {
+          const lastDate = new Date(lastCompletionDate).toISOString().split('T')[0];
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (lastDate === yesterdayStr || lastDate === today) {
+            if (lastDate === yesterdayStr) {
+              newStats.streak += 1;
+            }
+          } else {
+            newStats.streak = 1;
+          }
+        } else {
+          newStats.streak = 1;
+        }
+
+        setStats(newStats);
+        localStorage.setItem('justDoOneLastCompletion', now.toISOString());
+
+        setActiveChore(null);
+        setShowCompletionModal(true);
+      };
+
+      const addChore = (name, frequency, customNumber = null, customUnit = null) => {
+        const newChore = {
+          id: Date.now(),
+          name,
+          frequency,
+          customNumber,
+          customUnit,
+          lastCompleted: null,
+          paused: false
+        };
+        setChores(prev => [...prev, newChore]);
+      };
+
+      const deleteChore = (id) => {
+        setChores(prev => prev.filter(c => c.id !== id));
+        setSkippedChores(prev => prev.filter(choreId => choreId !== id));
+      };
+
+      const togglePauseChore = (id) => {
+        setChores(prev => prev.map(c => 
+          c.id === id ? { ...c, paused: !c.paused } : c
+        ));
+      };
+
+      const setChoreAsActive = (chore) => {
+        setActiveChore({
+          ...chore,
+          startedAt: new Date().toISOString()
+        });
+        setShowChoreList(false);
+      };
+
+      const getChoreStatus = (chore) => {
+        if (activeChore && activeChore.id === chore.id) return 'Active';
+        if (chore.paused) return 'Paused';
+        const available = getAvailableChores();
+        return available.find(c => c.id === chore.id) ? 'Available' : 'On Cooldown';
+      };
+
+      const getNextAvailableTime = (chore) => {
+        if (!chore.lastCompleted) return 'Available now';
+        
+        const lastCompleted = new Date(chore.lastCompleted);
+        const nextAvailable = new Date(lastCompleted);
+        
+        switch (chore.frequency) {
+          case 'daily':
+            nextAvailable.setDate(nextAvailable.getDate() + 1);
+            nextAvailable.setHours(0, 0, 1, 0);
+            break;
+          case 'weekly':
+            nextAvailable.setDate(nextAvailable.getDate() + 7);
+            nextAvailable.setHours(0, 0, 1, 0);
+            break;
+          case 'biweekly':
+            nextAvailable.setDate(nextAvailable.getDate() + 14);
+            nextAvailable.setHours(0, 0, 1, 0);
+            break;
+          case 'monthly':
+            nextAvailable.setDate(nextAvailable.getDate() + 30);
+            nextAvailable.setHours(0, 0, 1, 0);
+            break;
+          case 'custom':
+            const customDays = chore.customNumber * (
+              chore.customUnit === 'weeks' ? 7 :
+              chore.customUnit === 'months' ? 30 :
+              1
+            );
+            nextAvailable.setDate(nextAvailable.getDate() + customDays);
+            nextAvailable.setHours(0, 0, 1, 0);
+            break;
+        }
+
+        const now = new Date();
+        if (nextAvailable <= now) return 'Available now';
+        
+        return nextAvailable.toLocaleDateString();
+      };
+
+      const clearAllData = () => {
+        if (confirm('⚠️ WARNING: This will permanently delete ALL your chores, stats, and progress. This cannot be undone. Are you absolutely sure?')) {
+          if (confirm('Last chance! Really delete everything?')) {
+            setChores([]);
+            setActiveChore(null);
+            setDrawnChore(null);
+            setSkippedChores([]);
+            setStats({ streak: 0, monthTotal: 0, allTimeTotal: 0 });
+            localStorage.clear();
+            localStorage.setItem('justDoOneHasSeenOnboarding', 'true');
+            setShowSettings(false);
+            alert('All data cleared successfully.');
+          }
+        }
+      };
+
+      const restartOnboarding = () => {
+        localStorage.removeItem('justDoOneHasSeenOnboarding');
+        setShowOnboarding(true);
+        setShowSettings(false);
+      };
+
+      const formatElapsedTime = (seconds) => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hrs > 0) {
+          return `${hrs}h ${mins}m ${secs}s`;
+        } else if (mins > 0) {
+          return `${mins}m ${secs}s`;
+        } else {
+          return `${secs}s`;
+        }
+      };
+
+      const sortedChores = [...chores].sort((a, b) => {
+        switch (sortBy) {
+          case 'name':
+            return a.name.localeCompare(b.name);
+          case 'frequency':
+            return a.frequency.localeCompare(b.frequency);
+          case 'lastCompleted':
+            if (!a.lastCompleted) return 1;
+            if (!b.lastCompleted) return -1;
+            return new Date(b.lastCompleted) - new Date(a.lastCompleted);
+          case 'status':
+            return getChoreStatus(a).localeCompare(getChoreStatus(b));
+          default:
+            return 0;
+        }
+      });
+
+      const availableCount = getAvailableChores().length;
+      const hasAlreadySkipped = drawnChore && skippedChores.includes(drawnChore.id);
+      const activeChoreAlreadySkipped = activeChore && (activeChore.wasSkipped || skippedChores.includes(activeChore.id));
+
+      // Onboarding Screen
+      if (showOnboarding) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+            <div className="max-w-md bg-white rounded-lg shadow-2xl p-8 text-center">
+              <div className="text-6xl mb-6">🪣</div>
+              <h1 className="text-4xl font-bold text-indigo-900 mb-4">Welcome to Just Do One</h1>
+              <p className="text-lg text-gray-700 mb-6">
+                Draw one chore at a time. No overwhelm, just progress.
+              </p>
+              <div className="bg-indigo-50 rounded-lg p-4 mb-6 text-left">
+                <p className="text-sm text-gray-700 mb-2">✨ How it works:</p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Add your chores with how often you want to do them</li>
+                  <li>• Tap the bucket to draw a random chore</li>
+                  <li>• Complete it and track your progress</li>
+                  <li>• One thing at a time, that's it!</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem('justDoOneHasSeenOnboarding', 'true');
+                  setShowOnboarding(false);
+                  setShowAddChore(true);
+                }}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg transition-colors"
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Settings Screen
+      if (showSettings) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+            <div className="max-w-md mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-indigo-900">Settings</h1>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6 mb-4">
+                <h2 className="text-lg font-semibold text-gray-700 mb-3">App Info</h2>
+                <div className="text-sm text-gray-600">
+                  <p>Version: 1.0.0</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6 mb-4">
+                <h2 className="text-lg font-semibold text-gray-700 mb-3">General</h2>
+                <button
+                  onClick={restartOnboarding}
+                  className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+                >
+                  Restart Onboarding
+                </button>
+              </div>
+
+              <div className="bg-red-50 border-2 border-red-200 rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold text-red-700 mb-2">⚠️ Danger Zone</h2>
+                <p className="text-sm text-red-600 mb-4">Be very careful with these actions. They cannot be undone!</p>
+                <button
+                  onClick={clearAllData}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                >
+                  Clear All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Add Chore Screen
+      if (showAddChore) {
+        return <AddChoreScreen 
+          onAdd={addChore} 
+          onCancel={() => setShowAddChore(false)}
+          starterChores={STARTER_CHORES}
+          existingChores={chores}
+        />;
+      }
+
+      // Chore List Screen
+      if (showChoreList) {
+        return (
+          <ChoreListScreen
+            chores={sortedChores}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            onClose={() => setShowChoreList(false)}
+            onAddChore={() => {
+              setShowChoreList(false);
+              setShowAddChore(true);
+            }}
+            onSetActive={setChoreAsActive}
+            onTogglePause={togglePauseChore}
+            onEdit={setEditingChore}
+            onDelete={deleteChore}
+            getChoreStatus={getChoreStatus}
+            getNextAvailableTime={getNextAvailableTime}
+            editingChore={editingChore}
+            onSaveEdit={(updated) => {
+              setChores(prev => prev.map(c => c.id === updated.id ? updated : c));
+              setEditingChore(null);
+            }}
+            onCancelEdit={() => setEditingChore(null)}
+          />
+        );
+      }
+
+      // Main Screen
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+          <div className="max-w-md mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-indigo-900 mb-2">Just Do One</h1>
+              <p className="text-indigo-600">One chore at a time</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-indigo-600">{stats.streak}</div>
+                  <div className="text-sm text-gray-600">Day Streak</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-indigo-600">{stats.monthTotal}</div>
+                  <div className="text-sm text-gray-600">This Month</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-indigo-600">{stats.allTimeTotal}</div>
+                  <div className="text-sm text-gray-600">All Time</div>
+                </div>
+              </div>
+            </div>
+
+            {activeChore ? (
+              <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-2">Active Chore</h2>
+                  <h3 className="text-3xl font-bold text-indigo-900 mb-2">{activeChore.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    Drew at: {new Date(activeChore.startedAt).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Duration: {formatElapsedTime(elapsedTime)}
+                  </p>
+                </div>
+                
+                {activeChoreAlreadySkipped && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center">
+                    <p className="text-sm text-yellow-800">
+                      You've already skipped this one and cannot skip it again.
+                    </p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={completeChore}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg mb-3 transition-colors"
+                >
+                  <Check className="inline mr-2" size={20} />
+                  Complete
+                </button>
+                
+                <button
+                  onClick={skipActiveChore}
+                  disabled={activeChoreAlreadySkipped}
+                  className={`w-full text-sm transition-colors ${
+                    activeChoreAlreadySkipped 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Skip this chore
+                </button>
+              </div>
+            ) : drawnChore ? (
+              <div className="bg-white rounded-lg shadow-lg p-6 mb-6 animate-fadeIn relative">
+                <button
+                  onClick={cancelDrawnChore}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={20} />
+                </button>
+                
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-2">You drew:</h2>
+                  <h3 className="text-3xl font-bold text-indigo-900 mb-4">{drawnChore.name}</h3>
+                </div>
+
+                {hasAlreadySkipped && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-center">
+                    <p className="text-sm text-yellow-800">
+                      You've already skipped this one and cannot skip it again.
+                    </p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={startChore}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg mb-3 transition-colors"
+                >
+                  <Play className="inline mr-2" size={20} />
+                  Start
+                </button>
+                
+                <button
+                  onClick={skipDrawnChore}
+                  disabled={hasAlreadySkipped}
+                  className={`w-full text-sm transition-colors ${
+                    hasAlreadySkipped 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Skip & draw another
+                </button>
+              </div>
+            ) : (
+              <div className="text-center mb-6">
+                <button
+                  onClick={drawChore}
+                  disabled={availableCount === 0 || isDrawing}
+                  className={`relative ${availableCount === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} transition-transform`}
+                >
+                  <div className={`w-48 h-48 mx-auto bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full shadow-2xl flex items-center justify-center ${isDrawing ? 'animate-spin' : ''}`}>
+                    <span className="text-6xl">🪣</span>
+                  </div>
+                </button>
+                <p className="text-gray-600 mt-4">
+                  {availableCount === 0 ? 'No chores available' : `Tap to draw (${availableCount} available)`}
+                </p>
+              </div>
+            )}
+
+            {availableCount === 0 && !activeChore && !drawnChore && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-800 text-center mb-2">
+                  No chores available! Add more or wait for cooldowns to reset.
+                </p>
+                {chores.length > 0 && (
+                  <div className="text-sm text-yellow-700 text-center">
+                    Next available: {getNextAvailableTime(chores.sort((a, b) => {
+                      const aNext = new Date(a.lastCompleted || 0);
+                      const bNext = new Date(b.lastCompleted || 0);
+                      return aNext - bNext;
+                    })[0])}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <button
+                onClick={() => setShowAddChore(true)}
+                className="bg-white hover:bg-gray-50 text-indigo-600 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center justify-center"
+              >
+                <Plus size={20} className="mr-2" />
+                Add Chore
+              </button>
+              <button
+                onClick={() => setShowChoreList(true)}
+                className="bg-white hover:bg-gray-50 text-indigo-600 font-semibold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center justify-center"
+              >
+                <List size={20} className="mr-2" />
+                View All
+              </button>
+            </div>
+
+            {activeChore && (
+              <div className="text-center mt-6 opacity-30">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center">
+                  <span className="text-4xl">🪣</span>
+                </div>
+              </div>
+            )}
+
+            <div className="text-center mt-8">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+              >
+                Settings
+              </button>
+            </div>
+          </div>
+
+          {showCompletionModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
+              <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full text-center">
+                <div className="text-6xl mb-4">🎉</div>
+                <h2 className="text-2xl font-bold text-indigo-900 mb-2">Great job!</h2>
+                <p className="text-gray-600 mb-6">
+                  Take a few minutes to yourself before your next chore.
+                </p>
+                
+                <div className="bg-indigo-50 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div>
+                      <div className="text-xl font-bold text-indigo-600">{stats.streak}</div>
+                      <div className="text-gray-600">Streak</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-indigo-600">{stats.monthTotal}</div>
+                      <div className="text-gray-600">Month</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-indigo-600">{stats.allTimeTotal}</div>
+                      <div className="text-gray-600">Total</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      setShowCompletionModal(false);
+                      drawChore();
+                    }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Draw Another
+                  </button>
+                  <button
+                    onClick={() => setShowCompletionModal(false)}
+                    className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const AddChoreScreen = ({ onAdd, onCancel, starterChores, existingChores }) => {
+      const [name, setName] = useState('');
+      const [frequency, setFrequency] = useState('');
+      const [customNumber, setCustomNumber] = useState('');
+      const [customUnit, setCustomUnit] = useState('days');
+      const [showCustom, setShowCustom] = useState(false);
+
+      const handleFrequencySelect = (freq) => {
+        if (freq === 'custom') {
+          setShowCustom(true);
+          setFrequency(freq);
+        } else {
+          setFrequency(freq);
+          if (name.trim()) {
+            onAdd(name.trim(), freq);
+            setName('');
+            setFrequency('');
+          }
+        }
+      };
+
+      const handleCustomSubmit = () => {
+        if (name.trim() && customNumber) {
+          onAdd(name.trim(), 'custom', parseInt(customNumber), customUnit);
+          setName('');
+          setFrequency('');
+          setCustomNumber('');
+          setCustomUnit('days');
+          setShowCustom(false);
+        }
+      };
+
+      const handleStarterChoreAdd = (choreName) => {
+        setName(choreName);
+      };
+
+      const unusedStarterChores = starterChores.filter(starter => 
+        !existingChores.some(existing => existing.name.toLowerCase() === starter.toLowerCase())
+      );
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-indigo-900">Add Chore</h1>
+              <button
+                onClick={onCancel}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Chore Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Clean bathroom"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+
+              {!showCustom ? (
+                <>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    How often?
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {FREQUENCY_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleFrequencySelect(opt.value)}
+                        disabled={!name.trim()}
+                        className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Repeat every
+                  </label>
+                  <div className="flex gap-3 mb-4">
+                    <input
+                      type="number"
+                      value={customNumber}
+                      onChange={(e) => setCustomNumber(e.target.value)}
+                      placeholder="1"
+                      min="1"
+                      className="w-24 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <select
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {FREQUENCY_UNITS.map(unit => (
+                        <option key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCustomSubmit}
+                      disabled={!name.trim() || !customNumber}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCustom(false);
+                        setCustomNumber('');
+                        setCustomUnit('days');
+                        setFrequency('');
+                      }}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {unusedStarterChores.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold text-gray-700 mb-3">Need ideas?</h2>
+                <p className="text-sm text-gray-600 mb-4">Tap to add any of these common chores:</p>
+                <div className="space-y-2">
+                  {unusedStarterChores.map(chore => (
+                    <button
+                      key={chore}
+                      onClick={() => handleStarterChoreAdd(chore)}
+                      className="w-full text-left bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 py-2 px-4 rounded-lg transition-colors text-sm"
+                    >
+                      {chore}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const ChoreListScreen = ({ chores, sortBy, setSortBy, onClose, onAddChore, onSetActive, onTogglePause, onEdit, onDelete, getChoreStatus, getNextAvailableTime, editingChore, onSaveEdit, onCancelEdit }) => {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-indigo-900">All Chores</h1>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+              <label className="text-sm text-gray-600 mb-2 block">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="name">Name</option>
+                <option value="frequency">Frequency</option>
+                <option value="lastCompleted">Last Completed</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+
+            <button
+              onClick={onAddChore}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg mb-4 transition-colors flex items-center justify-center"
+            >
+              <Plus size={20} className="mr-2" />
+              Add Chore
+            </button>
+
+            <div className="space-y-3">
+              {chores.map(chore => (
+                <div key={chore.id} className="bg-white rounded-lg shadow-md p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg text-gray-900">{chore.name}</h3>
+                      <div className="text-sm text-gray-600 space-y-1 mt-1">
+                        <div>Frequency: {
+                          chore.frequency === 'custom' 
+                            ? `Every ${chore.customNumber} ${chore.customUnit}`
+                            : chore.frequency
+                        }</div>
+                        <div>Last completed: {chore.lastCompleted ? new Date(chore.lastCompleted).toLocaleDateString() : 'Never'}</div>
+                        <div>
+                          Status: <span className={`font-semibold ${
+                            getChoreStatus(chore) === 'Active' ? 'text-green-600' :
+                            getChoreStatus(chore) === 'Available' ? 'text-blue-600' :
+                            getChoreStatus(chore) === 'Paused' ? 'text-yellow-600' :
+                            'text-gray-600'
+                          }`}>
+                            {getChoreStatus(chore)}
+                          </span>
+                        </div>
+                        {getChoreStatus(chore) === 'On Cooldown' && (
+                          <div className="text-xs">Available: {getNextAvailableTime(chore)}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => onSetActive(chore)}
+                      disabled={getChoreStatus(chore) === 'Paused'}
+                      className="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-3 rounded text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Play size={16} className="inline mr-1" />
+                      Set Active
+                    </button>
+                    <button
+                      onClick={() => onTogglePause(chore.id)}
+                      className="flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 py-2 px-3 rounded text-sm font-semibold transition-colors"
+                    >
+                      <Pause size={16} className="inline mr-1" />
+                      {chore.paused ? 'Unpause' : 'Pause'}
+                    </button>
+                    <button
+                      onClick={() => onEdit(chore)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded text-sm transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => onDelete(chore.id)}
+                      className="bg-red-100 hover:bg-red-200 text-red-700 py-2 px-3 rounded text-sm transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {chores.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <p className="mb-4">No chores yet!</p>
+                <button
+                  onClick={onAddChore}
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                >
+                  Add your first chore
+                </button>
+              </div>
+            )}
+          </div>
+
+          {editingChore && (
+            <EditChoreModal
+              chore={editingChore}
+              onSave={onSaveEdit}
+              onCancel={onCancelEdit}
+            />
+          )}
+        </div>
+      );
+    };
+
+    const EditChoreModal = ({ chore, onSave, onCancel }) => {
+      const [name, setName] = useState(chore.name);
+      const [frequency, setFrequency] = useState(chore.frequency);
+      const [customNumber, setCustomNumber] = useState(chore.customNumber || '');
+      const [customUnit, setCustomUnit] = useState(chore.customUnit || 'days');
+
+      const handleSave = () => {
+        if (name.trim()) {
+          onSave({
+            ...chore,
+            name: name.trim(),
+            frequency,
+            customNumber: frequency === 'custom' ? parseInt(customNumber) : null,
+            customUnit: frequency === 'custom' ? customUnit : null
+          });
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-4">Edit Chore</h2>
+            
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Chore Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Frequency
+            </label>
+            <select
+              value={frequency}
+              onChange={(e) => setFrequency(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="custom">Custom</option>
+            </select>
+
+            {frequency === 'custom' && (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Repeat every
+                </label>
+                <div className="flex gap-3 mb-4">
+                  <input
+                    type="number"
+                    value={customNumber}
+                    onChange={(e) => setCustomNumber(e.target.value)}
+                    min="1"
+                    className="w-24 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  <select
+                    value={customUnit}
+                    onChange={(e) => setCustomUnit(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    {FREQUENCY_UNITS.map(unit => (
+                      <option key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSave}
+                disabled={!name.trim() || (frequency === 'custom' && !customNumber)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
